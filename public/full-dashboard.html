@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>IPFS Full Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    body { background: #f8f9fa; }
+    .dashboard-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
+    .dashboard-header h1 { margin: 0; }
+    .tab-content { margin-top: 2rem; }
+    .table-responsive { max-height: 50vh; }
+    .cid-mono { font-family: monospace; font-size: 0.95em; }
+  </style>
+</head>
+<body>
+<div class="container py-4">
+  <div class="dashboard-header">
+    <h1>IPFS Full Dashboard</h1>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">Upload File</button>
+  </div>
+
+  <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="files-tab" data-bs-toggle="tab" data-bs-target="#files" type="button" role="tab">Files</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="pin-tab" data-bs-toggle="tab" data-bs-target="#pin" type="button" role="tab">Pinning</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="ls-tab" data-bs-toggle="tab" data-bs-target="#ls" type="button" role="tab">Directory</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="network-tab" data-bs-toggle="tab" data-bs-target="#network" type="button" role="tab">Network</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="ipns-tab" data-bs-toggle="tab" data-bs-target="#ipns" type="button" role="tab">IPNS</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="dht-tab" data-bs-toggle="tab" data-bs-target="#dht" type="button" role="tab">DHT</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="dag-tab" data-bs-toggle="tab" data-bs-target="#dag" type="button" role="tab">DAG/IPLD</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="node-tab" data-bs-toggle="tab" data-bs-target="#node" type="button" role="tab">Node Info</button>
+    </li>
+  </ul>
+  <div class="tab-content">
+    <!-- IPNS Tab -->
+    <div class="tab-pane fade" id="ipns" role="tabpanel">
+      <div class="mb-3 mt-3">
+        <div class="alert alert-info">
+          <b>IPNS (InterPlanetary Name System):</b> IPNS lets you publish a mutable name (like a domain) that points to a CID. You can update the name to point to new content. <b>Publish</b> a CID to your node's IPNS name, or <b>resolve</b> any IPNS name to see the current CID it points to.
+        </div>
+        <h5>Publish CID to IPNS</h5>
+        <input id="ipns-publish-cid" class="form-control mb-2" placeholder="Enter CID to publish">
+        <button class="btn btn-primary mb-2" onclick="publishIpns()">Publish</button>
+        <div id="ipnsPublishResult" class="mb-4"></div>
+        <h5>Resolve IPNS Name</h5>
+        <input id="ipns-resolve-name" class="form-control mb-2" placeholder="Enter IPNS name (PeerID or /ipns/...)">
+        <button class="btn btn-info mb-2" onclick="resolveIpns()">Resolve</button>
+        <div id="ipnsResolveResult"></div>
+      </div>
+    </div>
+    <!-- DHT Tab -->
+    <div class="tab-pane fade" id="dht" role="tabpanel">
+      <div class="mb-3 mt-3">
+        <div class="alert alert-info">
+          <b>DHT (Distributed Hash Table):</b> The DHT is how IPFS nodes find each other and discover who has a given CID. <b>Find Peer</b> lets you look up a node by its PeerID. <b>Find Providers</b> shows which nodes can provide a given CID.
+        </div>
+        <h5>Find Peer</h5>
+        <input id="dht-peerid" class="form-control mb-2" placeholder="Enter PeerID">
+        <button class="btn btn-primary mb-2" onclick="findPeer()">Find Peer</button>
+        <div id="dhtFindPeerResult" class="mb-4"></div>
+        <h5>Find Providers for CID</h5>
+        <input id="dht-cid" class="form-control mb-2" placeholder="Enter CID">
+        <button class="btn btn-info mb-2" onclick="findProvs()">Find Providers</button>
+        <div id="dhtFindProvsResult"></div>
+      </div>
+    </div>
+    <!-- DAG/IPLD Tab -->
+    <div class="tab-pane fade" id="dag" role="tabpanel">
+      <div class="mb-3 mt-3">
+        <div class="alert alert-info">
+          <b>DAG/IPLD:</b> Every file and directory in IPFS is a node in a <b>DAG</b> (Directed Acyclic Graph), described using <b>IPLD</b> (InterPlanetary Linked Data). You can fetch and inspect the raw DAG object for any CID here.
+        </div>
+        <h5>Get DAG/IPLD Object</h5>
+        <input id="dag-cid" class="form-control mb-2" placeholder="Enter CID">
+        <button class="btn btn-primary mb-2" onclick="getDag()">Get Object</button>
+        <pre id="dagResult" class="bg-light p-2"></pre>
+      </div>
+    </div>
+    <!-- Files Tab -->
+    <div class="tab-pane fade show active" id="files" role="tabpanel">
+      <div class="mb-3 mt-3">
+        <div class="alert alert-info">
+          <b>Files:</b> Upload files to your private IPFS node. Each file is given a unique <b>CID</b> (Content Identifier) and is <b>pinned</b> (kept) on your node. You can search, download, or copy the CID for sharing or further operations.
+        </div>
+        <input id="search" class="form-control" placeholder="Search by filename or CID...">
+      </div>
+      <div class="table-responsive">
+        <table class="table table-striped align-middle" id="fileTable">
+          <thead>
+            <tr>
+              <th>Filename</th>
+              <th>CID</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="fileList">
+            <tr><td colspan="3" class="text-center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Pinning Tab -->
+    <div class="tab-pane fade" id="pin" role="tabpanel">
+      <div class="mb-3 mt-3">
+        <div class="alert alert-info">
+          <b>Pinning:</b> <b>Pin</b> a CID to keep its data on your node, or <b>unpin</b> to allow it to be garbage-collected. Pinning ensures your node always retains the file. Unpinning does not delete the file from the network if other nodes have it, but your node may remove it.
+        </div>
+        <input id="pin-cid" class="form-control" placeholder="Enter CID to pin/unpin">
+        <div class="mt-2">
+          <button class="btn btn-success" onclick="pinFile()">Pin</button>
+          <button class="btn btn-danger" onclick="unpinFile()">Unpin</button>
+        </div>
+        <div id="pinResult" class="mt-2"></div>
+      </div>
+    </div>
+    <!-- Directory Tab -->
+    <div class="tab-pane fade" id="ls" role="tabpanel">
+      <div class="mb-3 mt-3">
+        <div class="alert alert-info">
+          <b>Directory Listing (<abbr title='List'>ls</abbr>):</b> Enter a directory CID to see its contents. IPFS can store folders as well as files, and this lets you browse the links (files/subfolders) inside a directory object.
+        </div>
+        <input id="ls-cid" class="form-control" placeholder="Enter directory CID">
+        <button class="btn btn-info mt-2" onclick="listDir()">List Directory</button>
+        <div id="lsResult" class="mt-3"></div>
+      </div>
+    </div>
+    <!-- Network Tab -->
+    <div class="tab-pane fade" id="network" role="tabpanel">
+      <div class="row mt-3">
+        <div class="col-md-6">
+          <div class="alert alert-info">
+            <b>Network:</b> Shows your node's connected peers and repository statistics. Peers are other IPFS nodes you are directly connected to. Repo stats show your node's storage usage.
+          </div>
+          <h5>Connected Peers</h5>
+          <button class="btn btn-outline-primary btn-sm mb-2" onclick="loadPeers()">Refresh</button>
+          <ul id="peerList" class="list-group"></ul>
+        </div>
+        <div class="col-md-6">
+          <h5>Repo Stats</h5>
+          <button class="btn btn-outline-primary btn-sm mb-2" onclick="loadRepoStats()">Refresh</button>
+          <div id="repoStats"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Node Info Tab -->
+    <div class="tab-pane fade" id="node" role="tabpanel">
+      <div class="mt-3">
+        <div class="alert alert-info">
+          <b>Node Info:</b> Shows your node's identity, addresses, agent version, and protocol version. This is useful for debugging and learning about your node's presence in the IPFS network.
+        </div>
+        <button class="btn btn-outline-primary btn-sm mb-2" onclick="loadNodeInfo()">Refresh</button>
+        <div id="nodeInfo"></div>
+        <h5 class="mt-4">IPFS Version</h5>
+        <button class="btn btn-outline-primary btn-sm mb-2" onclick="loadVersion()">Refresh</button>
+        <div id="versionInfo"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="up" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title" id="uploadModalLabel">Upload to IPFS</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="file" name="file" class="form-control" required>
+          <div id="uploadResult" class="mt-2"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary">Upload</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// --- Files Tab ---
+async function fetchFiles() {
+  const res = await fetch('/files');
+  const files = await res.json();
+  return files;
+}
+
+function renderFiles(files) {
+  const tbody = document.getElementById('fileList');
+  if (!files.length) {
+    tbody.innerHTML = '<tr><td colspan="3" class="text-center">No files uploaded yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = files.map(f => `
+    <tr>
+      <td>${f.name}</td>
+      <td class="cid-mono">
+        ${f.cid}
+        ${f.dirCid ? `<br><span style='font-size:0.85em;color:#888;'>Directory CID: <code>${f.dirCid}</code></span>` : ''}
+      </td>
+      <td>
+        <a href="/download/${f.cid}" class="btn btn-sm btn-success" title="Download"><span>&#8681;</span> Download</a>
+        <button class="btn btn-sm btn-outline-secondary ms-1" onclick="copyCid('${f.cid}')" title="Copy CID">Copy CID</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function copyCid(cid) {
+  navigator.clipboard.writeText(cid);
+  alert('CID copied to clipboard!');
+}
+
+const searchInput = document.getElementById('search');
+if (searchInput) {
+  searchInput.addEventListener('input', async function() {
+    const files = await fetchFiles();
+    const q = this.value.trim().toLowerCase();
+    const filtered = files.filter(f => f.name.toLowerCase().includes(q) || f.cid.toLowerCase().includes(q));
+    renderFiles(filtered);
+  });
+}
+fetchFiles().then(renderFiles);
+
+// Upload form
+const up = document.getElementById('up');
+up.onsubmit = async e => {
+  e.preventDefault();
+  const body = new FormData(up);
+  const res  = await fetch('/upload', { method: 'POST', body });
+  const json = await res.json();
+  const result = document.getElementById('uploadResult');
+  if (res.ok) {
+    result.innerHTML = `<div class='alert alert-success'>Uploaded! File CID: <code>${json.fileCid}</code><br><span style='font-size:0.9em;color:#555;'>Directory CID: <code>${json.dirCid}</code></span></div>`;
+    fetchFiles().then(renderFiles);
+  } else {
+    result.innerHTML = `<div class='alert alert-danger'>${json.error}</div>`;
+  }
+};
+
+// --- Pinning Tab ---
+async function pinFile() {
+  const cid = document.getElementById('pin-cid').value.trim();
+  if (!cid) return;
+  const res = await fetch(`/pin/${cid}`, { method: 'POST' });
+  const json = await res.json();
+  document.getElementById('pinResult').innerHTML = res.ok ? `<div class='alert alert-success'>Pinned!</div>` : `<div class='alert alert-danger'>${json.error}</div>`;
+}
+async function unpinFile() {
+  const cid = document.getElementById('pin-cid').value.trim();
+  if (!cid) return;
+  const res = await fetch(`/pin/${cid}`, { method: 'DELETE' });
+  const json = await res.json();
+  document.getElementById('pinResult').innerHTML = res.ok ? `<div class='alert alert-success'>Unpinned!</div>` : `<div class='alert alert-danger'>${json.error}</div>`;
+}
+
+// --- Directory Tab ---
+async function listDir() {
+  const cid = document.getElementById('ls-cid').value.trim();
+  if (!cid) return;
+  const res = await fetch(`/ls/${cid}`);
+  const json = await res.json();
+  if (res.ok && json.Objects && json.Objects[cid]) {
+    const links = json.Objects[cid].Links;
+    document.getElementById('lsResult').innerHTML = links.length ?
+      `<ul class='list-group'>${links.map(l => `<li class='list-group-item'>${l.Name} <span class='cid-mono'>${l.Hash}</span> (${l.Size} bytes)</li>`).join('')}</ul>` :
+      '<div class="alert alert-info">No links in this directory.</div>';
+  } else {
+    document.getElementById('lsResult').innerHTML = `<div class='alert alert-danger'>${json.error || 'Not a directory or not found.'}</div>`;
+  }
+}
+
+// --- Network Tab ---
+async function loadPeers() {
+  const res = await fetch('/swarm/peers');
+  const json = await res.json();
+  const peers = json.Peers || [];
+  document.getElementById('peerList').innerHTML = peers.length ?
+    peers.map(p => `<li class='list-group-item'>${p.Peer} <span class='text-muted'>(${p.Addr})</span></li>`).join('') :
+    '<li class="list-group-item">No peers connected.</li>';
+}
+async function loadRepoStats() {
+  const res = await fetch('/stats/repo');
+  const json = await res.json();
+  document.getElementById('repoStats').innerHTML = res.ok ?
+    `<ul class='list-group'>
+      <li class='list-group-item'>Repo Size: ${json.RepoSize} bytes</li>
+      <li class='list-group-item'>Storage Max: ${json.StorageMax} bytes</li>
+      <li class='list-group-item'>Num Objects: ${json.NumObjects}</li>
+    </ul>` : `<div class='alert alert-danger'>${json.error}</div>`;
+}
+
+// --- Node Info Tab ---
+async function loadNodeInfo() {
+  const res = await fetch('/node/id');
+  const json = await res.json();
+  document.getElementById('nodeInfo').innerHTML = res.ok ?
+    `<ul class='list-group'>
+      <li class='list-group-item'>ID: <span class='cid-mono'>${json.ID}</span></li>
+      <li class='list-group-item'>Public Key: <span class='cid-mono'>${json.PublicKey}</span></li>
+      <li class='list-group-item'>Addresses: <pre>${(json.Addresses||[]).join('\n')}</pre></li>
+      <li class='list-group-item'>Agent Version: ${json.AgentVersion}</li>
+      <li class='list-group-item'>Protocol Version: ${json.ProtocolVersion}</li>
+    </ul>` : `<div class='alert alert-danger'>${json.error}</div>`;
+}
+async function loadVersion() {
+  const res = await fetch('/version');
+  const json = await res.json();
+  document.getElementById('versionInfo').innerHTML = res.ok ?
+    `<div class='alert alert-info'>${json.Version}</div>` : `<div class='alert alert-danger'>${json.error}</div>`;
+}
+
+// --- IPNS Tab ---
+async function publishIpns() {
+  const cid = document.getElementById('ipns-publish-cid').value.trim();
+  if (!cid) return;
+  const res = await fetch(`/ipns/publish/${cid}`, { method: 'POST' });
+  const json = await res.json();
+  document.getElementById('ipnsPublishResult').innerHTML = res.ok
+    ? `<div class='alert alert-success'>Published: <code>${json.Name}</code> → <code>${json.Value}</code></div>`
+    : `<div class='alert alert-danger'>${json.error}</div>`;
+}
+async function resolveIpns() {
+  const name = document.getElementById('ipns-resolve-name').value.trim();
+  if (!name) return;
+  const res = await fetch(`/ipns/resolve/${encodeURIComponent(name)}`);
+  const json = await res.json();
+  document.getElementById('ipnsResolveResult').innerHTML = res.ok
+    ? `<div class='alert alert-info'>Resolved: <code>${json.Path}</code></div>`
+    : `<div class='alert alert-danger'>${json.error}</div>`;
+}
+
+// --- DHT Tab ---
+async function findPeer() {
+  const peerid = document.getElementById('dht-peerid').value.trim();
+  if (!peerid) return;
+  const res = await fetch(`/dht/findpeer/${peerid}`);
+  const json = await res.json();
+  document.getElementById('dhtFindPeerResult').innerHTML = res.ok
+    ? `<pre>${JSON.stringify(json, null, 2)}</pre>`
+    : `<div class='alert alert-danger'>${json.error}</div>`;
+}
+async function findProvs() {
+  const cid = document.getElementById('dht-cid').value.trim();
+  if (!cid) return;
+  const res = await fetch(`/dht/findprovs/${cid}`);
+  const json = await res.json();
+  document.getElementById('dhtFindProvsResult').innerHTML = res.ok
+    ? `<pre>${JSON.stringify(json, null, 2)}</pre>`
+    : `<div class='alert alert-danger'>${json.error}</div>`;
+}
+
+// --- DAG/IPLD Tab ---
+async function getDag() {
+  const cid = document.getElementById('dag-cid').value.trim();
+  if (!cid) return;
+  const res = await fetch(`/object/get/${cid}`);
+  const json = await res.json();
+  document.getElementById('dagResult').textContent = res.ok
+    ? JSON.stringify(json, null, 2)
+    : json.error;
+}
+</script>
+</body>
+</html>
