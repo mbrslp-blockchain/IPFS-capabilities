@@ -15,13 +15,18 @@ This guide will help you set up and run the IPFS web application locally.
 
 3.  **Ensure IPFS Daemon is Running**
     In a separate terminal window/tab, start the IPFS daemon:
-    ```REFER TO THE IPFS_SWARM_CLI GUIDE TO MAKESURE IT IS RUNNING
+    ```bash
+    REFER TO THE IPFS_SWARM_CLI GUIDE TO MAKESURE IT IS RUNNING
     ```
     Run the following commands at home directory to allow the API control over the port 5001
 
-    ```ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["*"]'```
+    ```bash
+    ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["*"]'
+    ```
 
-    ```ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "POST", "GET"]' ```
+    ```bash
+    ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "POST", "GET"]'
+    ```
     Make sure it's fully initialized and listening on the default API port (`5001`).
 
 5.  **Run the Application**
