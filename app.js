@@ -11,7 +11,7 @@ const upload  = multer();               // in-memory storage
 const IPFS_API = 'http://localhost:5001'; // change if needed
 
 app.use(express.json()); // for parsing application/json bodies
-app.use(express.static('public'));        // serves index.html
+app.use(express.static('public', { index: 'full-dashboard.html' }));        // serves full-dashboard.html
 
 const FILEMAP_PATH = path.join(__dirname, 'filemap.json');
 
